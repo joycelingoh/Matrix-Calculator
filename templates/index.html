@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Calculator</title>
+    <style>
+        /* Your existing CSS code */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 2rem;
+            background: linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .calculator-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+
+        .title {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .matrix-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dimension-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 0.5rem;
+            border: 2px solid #9599E2;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .matrix-input {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .matrix-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .matrix-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .operation-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            min-width: 150px;
+        }
+
+        .operation-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .diagonalization { background: #4CAF50; }
+        .svd { background: #2196F3; }
+        .power { background: #9C27B0; }
+        .lu { background: #FF9800; }
+
+        .operations {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-container {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .result-title {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+
+        .matrix-display {
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        .error-message {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 2px solid #fecaca;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .button-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #9599E2;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background-color: #9599E2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1 class="title">Matrix Calculator</h1>
+        
+        <div class="matrix-controls">
+            <div class="dimension-control">
+                <label>Rows:</label>
+                <input type="number" min="1" max="10" value="3" id="matrix-rows">
+            </div>
+            <div class="dimension-control">
+                <label>Columns:</label>
+                <input type="number" min="1" max="10" value="3" id="matrix-cols">
+            </div>
+            <button class="control-btn" onclick="resetMatrix()">Reset Matrix</button>
+        </div>
+
+        <div class="matrix-input">
+            <div class="matrix-grid" id="matrix-grid"></div>
+        </div>
+
+        <div class="error-message" id="error-message">
+            You need to input a valid matrix for this calculation.
+        </div>
+
+        <div class="operations">
+            <button class="operation-btn diagonalization" onclick="calculate('diagonalization')">Diagonalization</button>
+            <button class="operation-btn lu" onclick="calculate('lu_decomposition')">LU Decomposition</button>
+            <button class="operation-btn power" onclick="calculate('power_method')">Power Method</button>
+            <button class="operation-btn svd" onclick="calculate('svd')">SVD</button>
+        </div>
+
+        <div class="loading" id="loading">Calculating...</div>
+
+        <div class="result-container">
+            <h2 class="result-title">Result</h2>
+            <div id="result">Select an operation to begin...</div>
+        </div>
+    </div>
+
+    <script>
+        let currentRows = 3;
+        let currentCols = 3;
+
+        function createMatrix(rows, cols) {
+            const grid = document.getElementById('matrix-grid');
+            grid.innerHTML = '';
+            currentRows = rows;
+            currentCols = cols;
+
+            for (let i = 0; i < rows; i++) {
+                const row = document.createElement('div');
+                row.className = 'matrix-row';
+                
+                for (let j = 0; j < cols; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = '0';
+                    input.step = 'any';
+                    row.appendChild(input);
+                }
+                
+                grid.appendChild(row);
+            }
+        }
+
+        function getMatrixValues() {
+            const inputs = document.querySelectorAll('.matrix-row input');
+            return Array.from(inputs).map(input => parseFloat(input.value) || 0);
+        }
+
+        function formatMatrix(matrix, rows, cols) {
+            let result = '';
+            for (let i = 0; i < rows; i++) {
+                result += '[ ';
+                for (let j = 0; j < cols; j++) {
+                    result += matrix[i][j].toFixed(4).padStart(10) + ' ';
+                }
+                result += ']\n';
+            }
+            return result;
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            setTimeout(() => {
+                errorElement.classList.remove('show');
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        async function calculate(operation) {
+            const rows = currentRows;
+            const cols = currentCols;
+            const matrix = getMatrixValues();
+            
+            if (operation !== 'svd' && rows !== cols) {
+                showError('You need to input a valid square matrix for this calculation');
+                return;
+            }
+
+            showLoading(true);
+            document.getElementById('result').innerHTML = '';
+
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        matrix: matrix,
+                        rows: rows,
+                        cols: cols,
+                        operation: operation
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                let resultHtml = '';
+
+                if (data.operation === 'svd') {
+                    resultHtml += `<h3>SVD Results</h3>`;
+                    resultHtml += `<pre>U Matrix:\n${formatMatrix(data.U, rows, rows)}</pre>`;
+                    resultHtml += `<pre>Singular Values:\n${data.S.join(', ')}</pre>`;
+                    resultHtml += `<pre>V^T Matrix:\n${formatMatrix(data.VT, cols, cols)}</pre>`;
+                } else if (data.operation === 'diagonalization') {
+                    resultHtml += `<h3>Diagonalization Results</h3>`;
+                    resultHtml += `<p>Diagonalizable: ${data.is_diagonalizable}</p>`;
+                    resultHtml += `<pre>Eigenvalues:\n${data.eigenvalues.join(', ')}</pre>`;
+                    resultHtml += `<pre>Eigenvectors:\n${formatMatrix(data.eigenvectors, rows, rows)}</pre>`;
+                } else if (data.operation === 'lu_decomposition') {
+                    resultHtml += `<h3>LU Decomposition Results</h3>`;
+                    resultHtml += `<pre>L Matrix:\n${formatMatrix(data.L, rows, rows)}</pre>`;
+                    resultHtml += `<pre>U Matrix:\n${formatMatrix(data.U, rows, rows)}</pre>`;
+                } else if (data.operation === 'power_method') {
+                    resultHtml += `<h3>Power Method Results</h3>`;
+                    resultHtml += `<p>Eigenvalue: ${data.eigenvalue.toFixed(4)}</p>`;
+                    resultHtml += `<pre>Eigenvector:\n${data.eigenvector.join(', ')}</pre>`;
+                }
+
+                document.getElementById('result').innerHTML = resultHtml;
+            } catch (error) {
+                showError('Calculation failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function resetMatrix() {
+            const rows = parseInt(document.getElementById('matrix-rows').value);
+            const cols = parseInt(document.getElementById('matrix-cols').value);
+            createMatrix(rows, cols);
+        }
+
+        // Initialize the matrix grid on page load
+        createMatrix(3, 3);
+    </script>
+</body>
+</html>
